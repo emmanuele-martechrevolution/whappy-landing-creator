@@ -8,7 +8,10 @@
       Caricamento in corso...
     </h1>
   </div>
-  <div v-else-if="order" class="w-screen h-screen bg-pink-yoube">
+  <div
+    v-else-if="order"
+    class="w-screen min-h-screen bg-pink-yoube"
+  >
     <header class="w-full flex justify-center p-7 border-y border-black">
       <div class="max-h-10 w-auto">
         <LogoYoube />
@@ -23,7 +26,10 @@
         >
           Ordine da confermare
         </h1>
-        <h1 v-else class="text-center text-3xl font-bold text-black">
+        <h1
+          v-else
+          class="text-center text-3xl font-bold text-black"
+        >
           Ordine confermato
         </h1>
 
@@ -57,11 +63,21 @@
           </h4>
         </div>
         <hr class="border-black border-t" />
-        <div id="order-details" class="py-3">
+        <div
+          id="order-details"
+          class="py-3"
+        >
           <h2 class="text-xl font-bold text-black">Dettagli ordine</h2>
           <p class="text-gray-500">Totale pezzi: {{ order.n_items }}</p>
-          <div v-if="order" class="flex flex-col pt-7">
-            <div v-for="item in order.items" :key="item.id" class="pb-3">
+          <div
+            v-if="order"
+            class="flex flex-col pt-7"
+          >
+            <div
+              v-for="item in order.items"
+              :key="item.id"
+              class="pb-3"
+            >
               <div class="flex justify-between">
                 <div class="flex w-1/2">
                   <h3 class="text-xl text-black mr-1">
@@ -98,6 +114,17 @@
             </h3>
           </div>
           <div class="flex justify-between pt-3">
+            <h3 class="text-lg text-gray-500">Subtotale</h3>
+            <h3 class="text-lg text-gray-500 font-bold">
+              {{
+                Number(order.tot_price).toLocaleString("it", {
+                  style: "currency",
+                  currency: "EUR",
+                })
+              }}
+            </h3>
+          </div>
+          <div class="flex justify-between pt-3">
             <h3 class="text-lg text-gray-500">IVA</h3>
             <h3 class="text-lg text-gray-500 font-bold">
               {{
@@ -112,7 +139,9 @@
             <h3 class="text-xl text-black">Totale</h3>
             <h3 class="text-xl text-black font-bold">
               {{
-                Number(order.tot_price).toLocaleString("it", {
+                (
+                  Number(order.tot_price) + Number(order.tot_price * 0.22)
+                ).toLocaleString("it", {
                   style: "currency",
                   currency: "EUR",
                 })
@@ -139,66 +168,66 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-import { useRoute } from "vue-router";
-import axios from "axios";
+  import { ref, onMounted } from "vue";
+  import { useRoute } from "vue-router";
+  import axios from "axios";
 
-import LogoYoube from "@/components/LogoYoube.vue";
-const route = useRoute();
+  import LogoYoube from "@/components/LogoYoube.vue";
+  const route = useRoute();
 
-const order = ref(null);
-const loadingGetOrder = ref(false);
+  const order = ref(null);
+  const loadingGetOrder = ref(false);
 
-function getOrder() {
-  order.value = null;
+  function getOrder() {
+    order.value = null;
 
-  loadingGetOrder.value = true;
-  axios
-    .get(
-      `https://api-yoube.whappy.it/api/Ecommerce/GetOrder/${route.params.idOrder}`
-    )
-    .then((res) => {
-      order.value = res.data;
-      res.data.items.forEach((item) => {
-        item.priceWithCurrency = Number(item.price).toLocaleString("it", {
+    loadingGetOrder.value = true;
+    axios
+      .get(
+        `https://api-yoube.whappy.it/api/Ecommerce/GetOrder/${route.params.idOrder}`
+      )
+      .then((res) => {
+        order.value = res.data;
+        res.data.items.forEach((item) => {
+          item.priceWithCurrency = Number(item.price).toLocaleString("it", {
+            style: "currency",
+            currency: "EUR",
+          });
+        });
+      })
+      .catch((error) => {
+        console.log(error);
+      })
+      .finally(() => {
+        loadingGetOrder.value = false;
+        total.value = total.value.toLocaleString("it", {
           style: "currency",
           currency: "EUR",
         });
       });
-    })
-    .catch((error) => {
-      console.log(error);
-    })
-    .finally(() => {
-      loadingGetOrder.value = false;
-      total.value = total.value.toLocaleString("it", {
-        style: "currency",
-        currency: "EUR",
+  }
+
+  function confirmOrder() {
+    axios
+      .put(
+        `https://api-yoube.whappy.it/api/Ecommerce/ConfirmOrder/${route.params.idOrder}`,
+        {}
+      )
+      .then((res) => {
+        console.log(res);
+      })
+      .catch((error) => {
+        console.log(error);
+      })
+      .finally(() => {
+        loadingGetOrder.value = true;
+        setTimeout(() => {
+          getOrder();
+        }, 1200);
       });
-    });
-}
+  }
 
-function confirmOrder() {
-  axios
-    .put(
-      `https://api-yoube.whappy.it/api/Ecommerce/ConfirmOrder/${route.params.idOrder}`,
-      {}
-    )
-    .then((res) => {
-      console.log(res);
-    })
-    .catch((error) => {
-      console.log(error);
-    })
-    .finally(() => {
-      loadingGetOrder.value = true;
-      setTimeout(() => {
-        getOrder();
-      }, 1200);
-    });
-}
-
-onMounted(() => {
-  getOrder();
-});
+  onMounted(() => {
+    getOrder();
+  });
 </script>
